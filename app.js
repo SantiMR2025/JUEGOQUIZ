@@ -1,604 +1,193 @@
-
-/* =========================================
-   QUIZ MASTER - LOGICA DEL JUEGO
-========================================= */
-
-// BANCO DE PREGUNTAS
-
 const preguntas = {
     programacion: [
         {
-            texto: "¿Qué lenguaje añade interactividad a una web?",
-            opciones: ["HTML", "CSS", "JavaScript", "SQL"],
-            correcta: 2
+            pregunta: "¿Qué significa HTML?",
+            opciones: [
+                "HyperText Markup Language",
+                "High Transfer Machine Language",
+                "Home Tool Markup Language",
+                "Hyper Tool Machine Language"
+            ],
+            correcta: 0
         },
         {
-            texto: "¿Qué etiqueta HTML crea un botón?",
-            opciones: ["div", "button", "p", "span"],
-            correcta: 1
+            pregunta: "¿Qué lenguaje se ejecuta en el navegador?",
+            opciones: [
+                "Java",
+                "Python",
+                "JavaScript",
+                "C++"
+            ],
+            correcta: 2
         }
     ],
 
     videojuegos: [
         {
-            texto: "¿Qué juego contiene creepers?",
-            opciones: ["Fortnite", "Minecraft", "Valorant", "Roblox"],
-            correcta: 1
+            pregunta: "¿Quién creó Minecraft?",
+            opciones: [
+                "Notch",
+                "Valve",
+                "Nintendo",
+                "Sony"
+            ],
+            correcta: 0
         },
         {
-            texto: "¿Qué empresa desarrolla Fortnite?",
-            opciones: ["Mojang", "Valve", "Epic Games", "Nintendo"],
-            correcta: 2
+            pregunta: "¿Cuál es la mascota de Nintendo?",
+            opciones: [
+                "Link",
+                "Mario",
+                "Kirby",
+                "Pikachu"
+            ],
+            correcta: 1
         }
     ],
 
     cultura: [
         {
-            texto: "¿Cuál es la capital de Francia?",
-            opciones: ["Madrid", "Roma", "París", "Lisboa"],
-            correcta: 2
+            pregunta: "¿Capital de España?",
+            opciones: [
+                "Barcelona",
+                "Madrid",
+                "Valencia",
+                "Sevilla"
+            ],
+            correcta: 1
         },
         {
-            texto: "¿Cuántos lados tiene un triángulo?",
-            opciones: ["3", "4", "5", "6"],
-            correcta: 0
+            pregunta: "¿Cuántos continentes existen?",
+            opciones: [
+                "5",
+                "6",
+                "7",
+                "8"
+            ],
+            correcta: 2
         }
     ]
 };
 
-// VARIABLES DEL JUEGO
+let categoriaActual;
+let preguntaActual;
+let puntos;
+let tiempo;
+let temporizador;
 
-let preguntasActuales = [];
-let indicePregunta = 0;
-let puntuacion = 0;
-let puntos = 125.50;
-let respondida = false;
-let juegoIniciado = false;
+function iniciarJuego(categoria){
 
-let totalAciertos = 7;
-let rachaActual = 0;
-let mejorRacha = 3;
+    categoriaActual = preguntas[categoria];
+    preguntaActual = 0;
+    puntos = 0;
 
-let puntosDoblesRestantes = 0;
-let eliminarDisponible = 0;
-let segundaOportunidad = 0;
-let segundaOportunidadUsada = false;
+    document.getElementById("inicio").classList.add("oculto");
+    document.getElementById("resultado").classList.add("oculto");
+    document.getElementById("quiz").classList.remove("oculto");
 
-// MEJORAS PERMANENTES
-
-let bonusPrincipiante = false;
-let bonusExperto = false;
-let ayudaExtra = false;
-
-// =========================================
-// NAVEGACION ENTRE PANTALLAS
-// =========================================
-
-function mostrarPantalla(id) {
-
-    // Si se entra a preguntas por primera vez,
-    // se inicia automáticamente una partida.
-
-    if (id === "juego" && !juegoIniciado) {
-        iniciarJuego();
-        return;
-    }
-
-    document.querySelectorAll("main section").forEach(seccion => {
-        seccion.classList.add("oculto");
-    });
-
-    document.getElementById(id).classList.remove("oculto");
-
-    actualizarMenuActivo(id);
-    actualizarMarcador();
-
-    if (id === "logros") {
-        mostrarLogros();
-    }
-
-    if (id === "tienda") {
-        mostrarTienda();
-    }
-}
-
-// MARCAR EL BOTON ACTIVO DEL MENU INFERIOR
-
-function actualizarMenuActivo(pantalla) {
-
-    const botones = document.querySelectorAll(
-        ".menu-inferior button"
-    );
-
-    botones.forEach(boton => {
-        boton.classList.remove("activo");
-        boton.setAttribute("aria-pressed", "false");
-    });
-
-    const ids = {
-        juego: "navPreguntas",
-        logros: "navLogros",
-        tienda: "navTienda"
-    };
-
-    if (ids[pantalla]) {
-        const boton = document.getElementById(ids[pantalla]);
-        boton.classList.add("activo");
-        boton.setAttribute("aria-pressed", "true");
-    }
-}
-
-// =========================================
-// SISTEMA DE PUNTOS
-// =========================================
-
-function actualizarMarcador() {
-
-    document.getElementById("puntos").textContent =
-        puntos.toLocaleString("es-ES", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-}
-
-// =========================================
-// INICIAR JUEGO
-// =========================================
-
-function iniciarJuego(categoria = null) {
-
-    if (categoria && preguntas[categoria]) {
-        preguntasActuales = [...preguntas[categoria]];
-    } else {
-        // Combinar todas las categorías
-        preguntasActuales = Object.values(preguntas).flat();
-    }
-
-    indicePregunta = 0;
-    puntuacion = 0;
-    respondida = false;
-    juegoIniciado = true;
-
-    mostrarPantalla("juego");
     mostrarPregunta();
 }
 
-// SISTEMA DE TIEMPO
+function mostrarPregunta(){
 
-let tiempoRestante = 20;
-let temporizador = null;
-const TIEMPO_MAXIMO = 20;
+    if(preguntaActual >= categoriaActual.length){
+        terminarJuego();
+        return;
+    }
 
-// =========================================
-// FUNCIONES DEL TEMPORIZADOR
-// =========================================
+    const pregunta = categoriaActual[preguntaActual];
 
-function iniciarTemporizador() {
-    clearInterval(temporizador);
-    tiempoRestante = TIEMPO_MAXIMO;
-    actualizarTiempo();
+    document.getElementById("pregunta").textContent =
+        pregunta.pregunta;
 
-    temporizador = setInterval(() => {
-        tiempoRestante--;
-        actualizarTiempo();
-
-        if (tiempoRestante <= 0) {
-            comprobarTiempoAgotado();
-        }
-    }, 1000);
-}
-
-function actualizarTiempo() {
-    const elemento = document.getElementById("tiempo");
-
-    if (!elemento) return;
-
-    elemento.textContent = tiempoRestante + "s";
-
-    elemento.classList.toggle(
-        "tiempo-bajo",
-        tiempoRestante <= 5
-    );
-}
-
-function comprobarTiempoAgotado() {
-    if (respondida) return;
-
-    clearInterval(temporizador);
-    respondida = true;
-    rachaActual = 0;
-
-    const pregunta = preguntasActuales[indicePregunta];
-    const botones = document.querySelectorAll("#respuestas button");
-
-    botones.forEach(boton => boton.disabled = true);
-
-    botones[pregunta.correcta].classList.add("correcta");
-
-    document.getElementById("mensaje").textContent =
-        "¡Tiempo agotado!";
-
-    document.getElementById("btnSiguiente")
-        .classList.remove("oculto");
-
-    actualizarMarcador();
-}
-
-// =========================================
-// MOSTRAR PREGUNTA
-// =========================================
-
-function mostrarPregunta() {
-
-    respondida = false;
-    segundaOportunidadUsada = false;
-
-    const pregunta = preguntasActuales[indicePregunta];
-
-    document.getElementById("progreso").textContent =
-        `Pregunta ${indicePregunta + 1} de ${preguntasActuales.length}`;
-
-    document.getElementById("textoPregunta").textContent =
-        pregunta.texto;
-
-    document.getElementById("mensaje").textContent = "";
-
-    document.getElementById("btnSiguiente")
-        .classList.add("oculto");
-
-    const contenedor = document.getElementById("respuestas");
+    const contenedor =
+        document.getElementById("respuestas");
 
     contenedor.innerHTML = "";
 
-    // Crear botones dinámicamente
-    pregunta.opciones.forEach((opcion, indice) => {
+    pregunta.opciones.forEach((opcion, indice)=>{
 
-        const boton = document.createElement("button");
+        const boton =
+            document.createElement("button");
 
-        boton.type = "button";
-        boton.textContent =
-            `${String.fromCharCode(65 + indice)}. ${opcion}`;
+        boton.textContent = opcion;
 
-        boton.addEventListener("click", () => {
-            comprobarRespuesta(indice);
-        });
+        boton.onclick = () =>
+            responder(indice);
 
         contenedor.appendChild(boton);
     });
 
-        // Aplicar ayuda para eliminar una respuesta
-    if (eliminarDisponible > 0 || ayudaExtra) {
-        const incorrecta = pregunta.opciones.findIndex(
-            (_, i) => i !== pregunta.correcta
-        );
-
-        const botones = contenedor.querySelectorAll("button");
-
-        botones[incorrecta].disabled = true;
-        botones[incorrecta].style.visibility = "hidden";
-
-        if (eliminarDisponible > 0) {
-            eliminarDisponible--;
-        }
-    }
-
-    // Iniciar el temporizador en TODAS las preguntas
     iniciarTemporizador();
 }
 
-// =========================================
-// COMPROBAR RESPUESTA
-// =========================================
+function responder(indice){
 
-function comprobarRespuesta(indice) {
-
-    if (respondida) {
-        return;
-    }
-    
-
-    const pregunta = preguntasActuales[indicePregunta];
-    const botones = document.querySelectorAll(
-        "#respuestas button"
-    );
-
-    const mensaje = document.getElementById("mensaje");
-
-    if (indice === pregunta.correcta) {
-
-        respondida = true;
-        puntuacion++;
-        totalAciertos++;
-        rachaActual++;
-
-        if (rachaActual > mejorRacha) {
-            mejorRacha = rachaActual;
-        }
-
-        comprobarLogros();
-
-        let puntosGanados = 1;
-
-        if (bonusPrincipiante) {
-            puntosGanados *= 1.05;
-        }
-
-        if (bonusExperto) {
-            puntosGanados *= 1.10;
-        }
-
-        if (puntosDoblesRestantes > 0) {
-            puntosGanados *= 2;
-        }
-
-        puntos += puntosGanados;
-
-        botones[indice].classList.add("correcta");
-
-        mensaje.textContent =
-            `¡Correcto! +${puntosGanados.toFixed(2)} puntos`;
-
-    } else {
-
-        botones[indice].classList.add("incorrecta");
-
-        if (segundaOportunidad > 0 &&
-            !segundaOportunidadUsada) {
-
-            segundaOportunidad--;
-            segundaOportunidadUsada = true;
-
-            botones[indice].disabled = true;
-
-            mensaje.textContent =
-                "¡Segunda oportunidad! Inténtalo otra vez.";
-
-            return;
-        }
-
-        respondida = true;
-        rachaActual = 0;
-
-        botones[pregunta.correcta].classList.add("correcta");
-
-        mensaje.textContent =
-            "Respuesta incorrecta.";
-    }
     clearInterval(temporizador);
 
-    botones.forEach(boton => {
-        boton.disabled = true;
-    });
-
-    if (puntosDoblesRestantes > 0) {
-        puntosDoblesRestantes--;
+    if(
+        indice ===
+        categoriaActual[preguntaActual].correcta
+    ){
+        puntos++;
     }
 
-    actualizarMarcador();
+    document.getElementById("puntos").textContent =
+        puntos;
 
-    document.getElementById("btnSiguiente")
+    preguntaActual++;
+
+    mostrarPregunta();
+}
+
+function iniciarTemporizador(){
+
+    clearInterval(temporizador);
+
+    tiempo = 20;
+
+    document.getElementById("tiempo").textContent =
+        tiempo;
+
+    temporizador = setInterval(()=>{
+
+        tiempo--;
+
+        document.getElementById("tiempo").textContent =
+            tiempo;
+
+        if(tiempo <= 0){
+
+            clearInterval(temporizador);
+
+            preguntaActual++;
+
+            mostrarPregunta();
+        }
+
+    },1000);
+}
+
+function terminarJuego(){
+
+    clearInterval(temporizador);
+
+    document.getElementById("quiz")
+        .classList.add("oculto");
+
+    document.getElementById("resultado")
+        .classList.remove("oculto");
+
+    document.getElementById("textoResultado")
+        .textContent =
+        `Has conseguido ${puntos} puntos de ${categoriaActual.length}`;
+}
+
+function reiniciarJuego(){
+
+    document.getElementById("resultado")
+        .classList.add("oculto");
+
+    document.getElementById("inicio")
         .classList.remove("oculto");
 }
-
-// =========================================
-// SIGUIENTE PREGUNTA
-// =========================================
-
-function siguientePregunta() {
-
-    indicePregunta++;
-
-    if (indicePregunta < preguntasActuales.length) {
-        mostrarPregunta();
-    } else {
-        mostrarResultados();
-    }
-}
-
-// =========================================
-// RESULTADOS
-// =========================================
-
-function mostrarResultados() {
-
-    juegoIniciado = false;
-
-    mostrarPantalla("resultados");
-
-    document.getElementById("puntuacion").textContent =
-        `Has acertado ${puntuacion} de ${preguntasActuales.length} preguntas.`;
-}
-
-// =========================================
-// LOGROS
-// =========================================
-
-function comprobarLogros() {
-
-    if (totalAciertos >= 10) {
-        bonusPrincipiante = true;
-    }
-
-    if (mejorRacha >= 5) {
-        ayudaExtra = true;
-    }
-
-    if (totalAciertos >= 100) {
-        bonusExperto = true;
-    }
-}
-
-function mostrarLogros() {
-
-    const contenedor = document.getElementById("listaLogros");
-
-    const logros = [
-        {
-            icono: "🏆",
-            nombre: "Principiante",
-            descripcion: "Responde correctamente 10 preguntas",
-            actual: totalAciertos,
-            objetivo: 10,
-            recompensa: "+5% de puntos"
-        },
-        {
-            icono: "🔥",
-            nombre: "Racha perfecta",
-            descripcion: "Responde 5 preguntas seguidas",
-            actual: mejorRacha,
-            objetivo: 5,
-            recompensa: "Una ayuda adicional"
-        },
-        {
-            icono: "⭐",
-            nombre: "Experto",
-            descripcion: "Responde correctamente 100 preguntas",
-            actual: totalAciertos,
-            objetivo: 100,
-            recompensa: "+10% de puntos"
-        }
-    ];
-
-    contenedor.innerHTML = "";
-
-    logros.forEach(logro => {
-
-        const progreso = Math.min(
-            logro.actual / logro.objetivo * 100,
-            100
-        );
-
-        const completado = logro.actual >= logro.objetivo;
-
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "tarjeta-logro";
-
-        tarjeta.innerHTML = `
-            <h3>${logro.icono} ${logro.nombre}</h3>
-            <p>${logro.descripcion}</p>
-            <p>${Math.min(logro.actual, logro.objetivo)}/${logro.objetivo}</p>
-
-            <div class="barra-progreso">
-                <div class="barra-completada"
-                     style="width:${progreso}%">
-                </div>
-            </div>
-
-            <p class="recompensa">
-                ${completado ? "CONSEGUIDO · " : ""}
-                ${logro.recompensa}
-            </p>
-        `;
-
-        contenedor.appendChild(tarjeta);
-    });
-}
-
-// =========================================
-// TIENDA
-// =========================================
-
-const productos = [
-    {
-        id: "dobles",
-        icono: "⚡",
-        nombre: "Puntos dobles",
-        descripcion: "Duplica los puntos durante 5 preguntas.",
-        precio: 25
-    },
-    {
-        id: "eliminar",
-        icono: "🧠",
-        nombre: "Eliminar respuesta",
-        descripcion: "Elimina una respuesta incorrecta en la próxima pregunta.",
-        precio: 10
-    },
-    {
-        id: "oportunidad",
-        icono: "💫",
-        nombre: "Segunda oportunidad",
-        descripcion: "Permite repetir una respuesta fallada.",
-        precio: 20
-    }
-];
-
-function mostrarTienda() {
-
-    const contenedor = document.getElementById("listaTienda");
-
-    contenedor.innerHTML = "";
-
-    productos.forEach(producto => {
-
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "tarjeta-tienda";
-
-        tarjeta.innerHTML = `
-            <h3>${producto.icono} ${producto.nombre}</h3>
-            <p>${producto.descripcion}</p>
-            <p class="precio">
-                🪙 ${producto.precio.toFixed(2)} puntos
-            </p>
-            <button class="btn-comprar"
-                    data-producto="${producto.id}">
-                COMPRAR
-            </button>
-        `;
-
-        tarjeta.querySelector("button").addEventListener(
-            "click",
-            () => comprarMejora(producto.id)
-        );
-
-        contenedor.appendChild(tarjeta);
-    });
-}
-
-// =========================================
-// COMPRAR MEJORAS
-// =========================================
-
-function comprarMejora(id) {
-
-    const producto = productos.find(p => p.id === id);
-
-    if (!producto) {
-        return;
-    }
-
-    if (puntos < producto.precio) {
-        alert("No tienes suficientes puntos.");
-        return;
-    }
-
-    puntos -= producto.precio;
-
-    switch (id) {
-        case "dobles":
-            puntosDoblesRestantes += 5;
-            break;
-
-        case "eliminar":
-            eliminarDisponible++;
-            break;
-
-        case "oportunidad":
-            segundaOportunidad++;
-            break;
-    }
-
-    actualizarMarcador();
-
-    alert(`Has comprado: ${producto.nombre}`);
-}
-
-// =========================================
-// INICIALIZACION
-// =========================================
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    actualizarMarcador();
-    mostrarPantalla("menu");
-
-});
